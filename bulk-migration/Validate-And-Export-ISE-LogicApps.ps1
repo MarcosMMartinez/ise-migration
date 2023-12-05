@@ -103,7 +103,7 @@ $logicApps | ForEach-Object {
                         if ($folderName -ne $null) {
                             # Extract the zip file to the folder with the name of the folder containing workflow.json
                             Expand-Archive -LiteralPath $zipFileName -DestinationPath $folderName -Force
-                            Write-Host 'Downloaded and extracted to folder' +  $folderName -ForegroundColor Green
+                            Write-Host 'Downloaded and extracted to folder '  $folderName -ForegroundColor Green
                         }
                         else {
                             Write-Host 'The folder containing workflow.json was not found in the zip file.' -ForegroundColor Red
