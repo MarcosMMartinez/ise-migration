@@ -78,7 +78,8 @@ $logicApps | ForEach-Object {
                     Write-Host 'Details'
                     Write-Host '======='
                     Write-Host 'Package Link:' $exportResponseContent.properties.packageLink.uri
-                    
+
+                    $packageLink = $exportResponseContent.properties.packageLink.uri
                     $zipFileName = Split-Path $packageLink -Leaf
                     Invoke-WebRequest -Uri $packageLink -OutFile $zipFileName
 
