@@ -1,4 +1,4 @@
-﻿#===============================================================================
+#===============================================================================
 # Microsoft FastTrack for Azure
 # Validate and export Logic Apps in an Integration Service Environment
 # Based on https://github.com/wsilveiranz/iseexportutilities by Wagner Silveira
@@ -71,23 +71,48 @@ $logicApps | ForEach-Object {
             try {
 
                 $exportResponse = Invoke-WebRequest -UseBasicParsing $exportUrl -Headers $head -ContentType 'application/json' -Method POST -Body $body
-                if ($exportResponse.StatusCode -eq '200') {
+				if ($exportResponse.StatusCode -eq '200') {
                     $exportSucceededCount = $exportSucceededCount + 1
                     $exportResponseContent = ConvertFrom-Json -InputObject $exportResponse.Content
                     Write-Host $validateResponseContent.properties.workflows.PSObject.Properties.Name 'Exported successfully' -ForegroundColor Green
                     Write-Host 'Details'
                     Write-Host '======='
-                    Write-Host 'Package Link:' $exportResponseContent.properties.packageLink.uri
-
                     $packageLink = $exportResponseContent.properties.packageLink.uri
-                    $zipFileName = Split-Path $packageLink -Leaf
-                    Invoke-WebRequest -Uri $packageLink -OutFile $zipFileName
+                    Write-Host 'Package Link:' $packageLink
 
-                    $extractPath = [System.IO.Path]::GetFileNameWithoutExtension($zipFileName)
-                    Expand-Archive -LiteralPath $zipFileName -DestinationPath $extractPath -Force
-                    Write-Host 'Downloaded and extracted:' $zipFileName 'to' $extractPath -ForegroundColor Green
+                    # Check if the package link is not null or empty
+                    if (-not [string]::IsNullOrEmpty($packageLink)) {
+                        # Download the zip file
+                        $zipFileName = "temp.zip"
+                        Invoke-WebRequest -Uri $packageLink -OutFile $zipFileName
 
-                    
+                        # Read the zip file to find the folder name
+                        Add-Type -AssemblyName System.IO.Compression.FileSystem
+                        $currentTempZip = $PWD.Path + "\" + $zipFileName
+                        $zip = [System.IO.Compression.ZipFile]::OpenRead($currentTempZip)
+                        $folderName = $null
+                        foreach ($entry in $zip.Entries) {
+                            if ($entry.FullName -like "*/workflow.json") {
+                                $folderName = $entry.FullName.Split('/')[0]
+                                break
+                            }
+                        }
+                        $zip.Dispose()
+
+                        # Check if the folder name was found
+                        if ($folderName -ne $null) {
+                            # Extract the zip file to the folder with the name of the folder containing workflow.json
+                            Expand-Archive -LiteralPath $zipFileName -DestinationPath $folderName -Force
+                            Write-Host 'Downloaded and extracted to folder' +  $folderName -ForegroundColor Green
+                        }
+                        else {
+                            Write-Host 'The folder containing workflow.json was not found in the zip file.' -ForegroundColor Red
+                        }
+                    }
+                    else {
+                        Write-Host 'Package link is null or empty.' -ForegroundColor Red
+                    }
+
                     Write-Host
                     $exportResponseContent.properties.details | ForEach-Object {
                         Write-Host $_.exportDetailCategory $_.exportDetailCode $_.exportDetailMessage -ForegroundColor Yellow
