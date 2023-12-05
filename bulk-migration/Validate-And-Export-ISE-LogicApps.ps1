@@ -78,6 +78,15 @@ $logicApps | ForEach-Object {
                     Write-Host 'Details'
                     Write-Host '======='
                     Write-Host 'Package Link:' $exportResponseContent.properties.packageLink.uri
+                    
+                    $zipFileName = Split-Path $packageLink -Leaf
+                    Invoke-WebRequest -Uri $packageLink -OutFile $zipFileName
+
+                    $extractPath = [System.IO.Path]::GetFileNameWithoutExtension($zipFileName)
+                    Expand-Archive -LiteralPath $zipFileName -DestinationPath $extractPath -Force
+                    Write-Host 'Downloaded and extracted:' $zipFileName 'to' $extractPath -ForegroundColor Green
+
+                    
                     Write-Host
                     $exportResponseContent.properties.details | ForEach-Object {
                         Write-Host $_.exportDetailCategory $_.exportDetailCode $_.exportDetailMessage -ForegroundColor Yellow
